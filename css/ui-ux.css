@@ -1,0 +1,439 @@
+/* ==========================================================================
+   ui-ux.css — Phase 5C (UI & UX Improvements)
+   Additive-only stylesheet, loaded after style.css. Nothing in style.css
+   is modified or duplicated here — this file only adds new rules and new
+   responsive breakpoints for existing --gs-* tokens/classes.
+   ========================================================================== *//* ---------- Global Dark Mode & Bootstrap Overrides ---------- */
+body {
+  background-color: var(--gs-bg);
+  color: var(--gs-text);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Modals */
+.modal-content {
+  background-color: var(--gs-card) !important;
+  color: var(--gs-text) !important;
+  border: 1px solid var(--gs-border) !important;
+  backdrop-filter: blur(16px);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6) !important;
+}
+.modal-header, .modal-footer {
+  border-color: var(--gs-border) !important;
+}
+.modal-header .btn-close {
+  filter: invert(1) grayscale(1) brightness(2);
+}
+
+/* Inputs, Textareas, Selects */
+.form-control, .form-select {
+  background-color: var(--gs-navy-2) !important;
+  color: var(--gs-text) !important;
+  border: 1px solid var(--gs-border) !important;
+  border-radius: 8px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.form-control:focus, .form-select:focus {
+  background-color: var(--gs-navy-3) !important;
+  color: #fff !important;
+  border-color: var(--gs-teal) !important;
+  box-shadow: 0 0 0 3px rgba(0, 242, 209, 0.25) !important;
+}
+.form-control::placeholder {
+  color: var(--gs-muted) !important;
+  opacity: 0.7;
+}
+
+/* Tables */
+.table {
+  color: var(--gs-text) !important;
+  border-color: var(--gs-border) !important;
+}
+.table-gs thead th, .table thead th {
+  background-color: var(--gs-navy-2) !important;
+  color: var(--gs-text) !important;
+  border-bottom: 2px solid var(--gs-border) !important;
+}
+.table td, .table th {
+  border-bottom: 1px solid var(--gs-border) !important;
+}
+.table-hover tbody tr:hover {
+  background-color: rgba(255, 255, 255, 0.03) !important;
+  color: #fff !important;
+}
+
+/* Custom topbar glassmorphism */
+.gs-topbar {
+  background: rgba(11, 19, 41, 0.75) !important;
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--gs-border) !important;
+}
+
+/* Cards Glassmorphism */
+.gs-card {
+  background: var(--gs-card) !important;
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--gs-border) !important;
+  border-radius: var(--gs-radius);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.gs-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 40px rgba(0, 242, 209, 0.08) !important;
+}
+
+/* Dropdowns */
+.dropdown-menu {
+  background-color: var(--gs-card) !important;
+  border: 1px solid var(--gs-border) !important;
+  box-shadow: var(--gs-shadow) !important;
+}
+.dropdown-item {
+  color: var(--gs-text) !important;
+}
+.dropdown-item:hover {
+  background-color: var(--gs-navy-3) !important;
+  color: #fff !important;
+}
+
+/* Nav tabs */
+.nav-tabs {
+  border-bottom-color: var(--gs-border) !important;
+}
+.nav-tabs .nav-link {
+  color: var(--gs-muted) !important;
+}
+.nav-tabs .nav-link.active {
+  background-color: var(--gs-navy-2) !important;
+  border-color: var(--gs-border) var(--gs-border) transparent !important;
+  color: var(--gs-teal) !important;
+}
+
+/* Alerts */
+.alert {
+  border: 1px solid transparent !important;
+  border-radius: 8px !important;
+}
+.alert-danger {
+  background-color: rgba(255, 95, 109, 0.15) !important;
+  color: #ff5f6d !important;
+  border-color: rgba(255, 95, 109, 0.3) !important;
+}
+.alert-success {
+  background-color: rgba(0, 242, 209, 0.1) !important;
+  color: var(--gs-teal) !important;
+  border-color: rgba(0, 242, 209, 0.2) !important;
+}
+
+/* Custom glowing effects */
+.btn-gs-primary {
+  background: linear-gradient(135deg, var(--gs-teal) 0%, #00bda3 100%) !important;
+  border: none !important;
+  color: #070b19 !important;
+  font-weight: 700 !important;
+  box-shadow: 0 4px 15px rgba(0, 242, 209, 0.25);
+  transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+}
+.btn-gs-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(0, 242, 209, 0.4);
+  color: #070b19 !important;
+}
+.btn-gs-outline {
+  border: 2px solid var(--gs-teal) !important;
+  color: var(--gs-teal) !important;
+  background: transparent !important;
+  transition: all 0.2s ease !important;
+}
+.btn-gs-outline:hover {
+  background: var(--gs-teal) !important;
+  color: #070b19 !important;
+  box-shadow: 0 4px 15px rgba(0, 242, 209, 0.25);
+}
+
+/* ---------- Breadcrumbs ---------- */
+.gs-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.78rem;
+  color: var(--gs-muted);
+  margin-top: 0.15rem;
+  flex-wrap: wrap;
+}
+.gs-breadcrumb .gs-crumb { color: var(--gs-muted); }
+.gs-breadcrumb .gs-crumb:last-child { color: var(--gs-text); font-weight: 600; }
+.gs-breadcrumb .gs-crumb-sep { opacity: 0.5; font-size: 0.7rem; }
+
+/* ---------- Active nav link, focus-visible reinforcement ---------- */
+.gs-nav-link:focus-visible,
+.btn:focus-visible,
+.form-control:focus-visible,
+.form-select:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--gs-teal);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+.gs-nav-link[aria-current="page"] {
+  background: var(--gs-teal);
+  color: #fff;
+}
+
+/* Skip link for keyboard users */
+.gs-skip-link {
+  position: absolute;
+  left: -999px;
+  top: -999px;
+  background: var(--gs-teal);
+  color: #fff;
+  padding: 0.5rem 1rem;
+  border-radius: 0 0 8px 0;
+  z-index: 5000;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+.gs-skip-link:focus {
+  left: 0;
+  top: 0;
+}
+
+/* ---------- Skeleton loaders ---------- */
+.gs-skel {
+  position: relative;
+  overflow: hidden;
+  background: var(--gs-border);
+  border-radius: 6px;
+  display: block;
+}
+.gs-skel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.55), transparent);
+  transform: translateX(-100%);
+  animation: gs-skel-sweep 1.3s ease-in-out infinite;
+}
+@keyframes gs-skel-sweep {
+  100% { transform: translateX(100%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .gs-skel::after { animation: none; }
+}
+.gs-skel-text { height: 0.8rem; margin-bottom: 0.5rem; width: 100%; }
+.gs-skel-text.w-60 { width: 60%; }
+.gs-skel-text.w-40 { width: 40%; }
+.gs-skel-title { height: 1.2rem; width: 45%; margin-bottom: 0.9rem; }
+.gs-skel-tile { height: 84px; border-radius: var(--gs-radius); }
+.gs-skel-row { height: 2.4rem; margin-bottom: 0.5rem; border-radius: 8px; }
+.gs-skel-avatar { width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0; }
+.gs-skel-card { height: 220px; border-radius: var(--gs-radius); }
+
+/* ---------- Progress indicator (linear) ---------- */
+.gs-progress-linear {
+  height: 4px;
+  width: 100%;
+  background: var(--gs-border);
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+}
+.gs-progress-linear > span {
+  position: absolute;
+  inset: 0;
+  width: 40%;
+  background: var(--gs-teal);
+  border-radius: 4px;
+  animation: gs-progress-indeterminate 1.2s ease-in-out infinite;
+}
+@keyframes gs-progress-indeterminate {
+  0% { left: -40%; }
+  100% { left: 100%; }
+}
+.gs-progress-bar-fixed {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  z-index: 4000;
+  background: transparent;
+  display: none;
+}
+.gs-progress-bar-fixed.show { display: block; }
+.gs-progress-bar-fixed > span {
+  display: block;
+  height: 100%;
+  width: 40%;
+  background: var(--gs-teal);
+  animation: gs-progress-indeterminate 1s ease-in-out infinite;
+}
+
+/* ---------- Toast variants (extend existing toast stack) ---------- */
+.toast .toast-body { font-size: 0.85rem; }
+
+/* ---------- Generic empty state (variants over .gs-empty) ---------- */
+.gs-empty-state {
+  text-align: center;
+  padding: 2.75rem 1.25rem;
+  color: var(--gs-muted);
+}
+.gs-empty-state i {
+  font-size: 2.4rem;
+  color: var(--gs-border);
+  display: block;
+  margin-bottom: 0.75rem;
+}
+.gs-empty-state h6 {
+  color: var(--gs-text);
+  font-weight: 700;
+  margin-bottom: 0.35rem;
+}
+.gs-empty-state p { font-size: 0.85rem; margin-bottom: 0.9rem; }
+
+/* ---------- Error pages (404 / 403 / session-expired / network-error) ---------- */
+.gs-error-shell {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at 15% 20%, #1a2c47 0%, var(--gs-navy) 55%, #0b1420 100%);
+  padding: 2rem;
+}
+.gs-error-card {
+  background: var(--gs-card);
+  border-radius: var(--gs-radius);
+  box-shadow: var(--gs-shadow);
+  padding: 3rem 2.5rem;
+  max-width: 460px;
+  width: 100%;
+  text-align: center;
+}
+.gs-error-code {
+  font-family: 'Sora', sans-serif;
+  font-weight: 800;
+  font-size: 3.2rem;
+  color: var(--gs-teal);
+  line-height: 1;
+  margin-bottom: 0.5rem;
+}
+.gs-error-icon {
+  font-size: 2.4rem;
+  color: var(--gs-teal);
+  margin-bottom: 0.75rem;
+}
+.gs-error-card h1 {
+  font-size: 1.25rem;
+  margin-bottom: 0.5rem;
+}
+.gs-error-card p {
+  color: var(--gs-muted);
+  font-size: 0.9rem;
+  margin-bottom: 1.5rem;
+}
+.gs-error-actions {
+  display: flex;
+  gap: 0.6rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* ---------- Forms: validation + input feedback ---------- */
+.form-control.is-invalid,
+.form-select.is-invalid {
+  border-color: var(--gs-red);
+  background-image: none;
+}
+.form-control.is-valid,
+.form-select.is-valid {
+  border-color: var(--gs-teal);
+  background-image: none;
+}
+.gs-field-error {
+  color: var(--gs-red);
+  font-size: 0.78rem;
+  margin-top: 0.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+.gs-field-error::before {
+  content: "\f333";
+  font-family: "bootstrap-icons";
+  font-size: 0.85rem;
+}
+.gs-field-hint {
+  color: var(--gs-muted);
+  font-size: 0.78rem;
+  margin-top: 0.25rem;
+}
+label.form-label { font-weight: 600; font-size: 0.85rem; }
+.form-label .gs-required { color: var(--gs-red); margin-left: 0.15rem; }
+
+/* ---------- Cards / tables / modals polish ---------- */
+.gs-card { transition: box-shadow 0.15s ease, transform 0.15s ease; }
+.gs-card.gs-card-hover:hover {
+  box-shadow: 0 4px 20px rgba(16,27,45,0.12);
+}
+.table > :not(caption) > * > * { vertical-align: middle; }
+.table thead th {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--gs-muted);
+  background: var(--gs-bg);
+  border-bottom: 1px solid var(--gs-border);
+}
+.table-responsive { border-radius: var(--gs-radius); }
+.modal-content { border-radius: var(--gs-radius); border: none; box-shadow: var(--gs-shadow); }
+.modal-header { border-bottom: 1px solid var(--gs-border); }
+.modal-footer { border-top: 1px solid var(--gs-border); }
+
+/* ---------- Confirmation dialog polish (Bootstrap-modal based) ---------- */
+#gs-confirm-modal .modal-content { border-radius: var(--gs-radius); }
+
+/* ---------- Smooth page/section transitions ---------- */
+.gs-section { will-change: opacity, transform; }
+
+/* ---------- Consistent spacing scale ---------- */
+.gs-content > .gs-section > .row:first-child { margin-top: 0; }
+
+/* ==========================================================================
+   RESPONSIVE — mobile & tablet
+   ========================================================================== */
+
+/* Tablet */
+@media (max-width: 1200px) {
+  .gs-content { padding: 1.5rem; }
+}
+
+@media (max-width: 991px) {
+  .gs-topbar { padding: 0.75rem 1.1rem; }
+  .gs-content { padding: 1.15rem; }
+  .gs-error-card { padding: 2.25rem 1.5rem; }
+}
+
+/* Mobile */
+@media (max-width: 767px) {
+  .gs-content { padding: 0.9rem; }
+  .gs-topbar { padding: 0.6rem 0.85rem; flex-wrap: wrap; gap: 0.5rem; }
+  .gs-topbar h1 { font-size: 1rem; }
+  .gs-card-body { padding: 1rem; }
+  .gs-breadcrumb { font-size: 0.72rem; }
+  .table { font-size: 0.82rem; }
+  #rep-tabs .nav-link { padding: 0.3rem 0.65rem; font-size: 0.78rem; }
+  .gs-chart-wrap { height: 220px; }
+  .modal-dialog { margin: 0.75rem; }
+  #gs-toast-stack { left: 0.5rem; right: 0.5rem; max-width: none; top: 0.5rem; }
+  .gs-error-card { padding: 1.75rem 1.1rem; }
+  .gs-error-code { font-size: 2.4rem; }
+}
+
+@media (max-width: 480px) {
+  .gs-topbar .gs-topbar-sub { display: none; }
+  .gs-sidebar { width: 82vw; max-width: 280px; }
+}
+
+/* Reflow any 2/3/4-column stat-tile or card rows to stack cleanly */
+@media (max-width: 575px) {
+  .gs-content .row > [class*="col-"] { margin-bottom: 0.85rem; }
+  .gs-content .row > [class*="col-"]:last-child { margin-bottom: 0; }
+}

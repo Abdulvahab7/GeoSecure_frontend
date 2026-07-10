@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>GeoSecure Attendance</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="js/config.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/auth.js"></script>
+</head>
+<body style="background:#070b19;height:100vh;display:flex;align-items:center;justify-content:center;">
+<div class="spinner-border text-light" role="status"><span class="visually-hidden">Loading…</span></div>
+<script>
+  if (GsStorage.isLoggedIn()) {
+    GsAuth.redirectToDashboard();
+  } else {
+    window.location.href = 'login.html';
+  }
+</script>
+</body>
+</html>

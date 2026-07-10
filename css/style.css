@@ -1,0 +1,516 @@
+/* ==========================================================================
+   GeoSecure Attendance System — Design System
+   Palette: deep survey-navy shell, verified-location teal accent
+   Type: Sora (display) + Inter (body/UI)
+   Signature: the "geofence ping" — a pulsing concentric ring used on
+   live/active status (QR sessions, presence badges).
+   ========================================================================== */
+
+:root {
+  --gs-navy: #0b1329;
+  --gs-navy-2: #111d3a;
+  --gs-navy-3: #1c2d54;
+  --gs-teal: #00f2d1;
+  --gs-teal-dark: #00bda3;
+  --gs-teal-light: rgba(0, 242, 209, 0.15);
+  --gs-amber: #ffb03a;
+  --gs-amber-light: rgba(255, 176, 58, 0.15);
+  --gs-red: #ff5f6d;
+  --gs-red-light: rgba(255, 95, 109, 0.15);
+  --gs-bg: #070b19;
+  --gs-card: #0f1830;
+  --gs-text: #f1f5f9;
+  --gs-muted: #94a3b8;
+  --gs-border: rgba(255, 255, 255, 0.08);
+  --gs-radius: 16px;
+  --gs-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+}
+
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
+
+* { box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--gs-bg);
+  color: var(--gs-text);
+  font-size: 0.925rem;
+}
+
+h1, h2, h3, h4, h5, h6, .gs-display {
+  font-family: 'Sora', sans-serif;
+  letter-spacing: -0.01em;
+}
+
+a { text-decoration: none; }
+
+/* Focus visibility (a11y) */
+:focus-visible {
+  outline: 2px solid var(--gs-teal);
+  outline-offset: 2px;
+}
+
+/* ---------- Auth / login page ---------- */
+.gs-auth-shell {
+  min-height: 100vh;
+  display: flex;
+  background: radial-gradient(circle at 15% 20%, #1a2c47 0%, var(--gs-navy) 55%, #0b1420 100%);
+}
+
+.gs-auth-side {
+  flex: 1.1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 4rem 5vw;
+  color: #f5f7fa;
+  position: relative;
+  overflow: hidden;
+}
+
+.gs-auth-side .gs-brand {
+  font-family: 'Sora', sans-serif;
+  font-weight: 700;
+  font-size: 1.4rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 2.5rem;
+}
+
+.gs-auth-side h1 {
+  font-size: clamp(1.9rem, 3vw, 2.6rem);
+  font-weight: 800;
+  max-width: 20ch;
+  line-height: 1.15;
+  margin-bottom: 1rem;
+}
+
+.gs-auth-side p {
+  color: #aab6c8;
+  max-width: 42ch;
+  font-size: 1.02rem;
+}
+
+.gs-auth-form-wrap {
+  flex: 0.9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--gs-bg);
+  padding: 2rem;
+}
+
+.gs-auth-card {
+  width: 100%;
+  max-width: 400px;
+  background: var(--gs-card);
+  border-radius: var(--gs-radius);
+  box-shadow: var(--gs-shadow);
+  padding: 2.5rem 2.25rem;
+}
+
+.gs-auth-card h2 {
+  font-weight: 700;
+  font-size: 1.4rem;
+  margin-bottom: 0.25rem;
+}
+
+.gs-auth-card .gs-sub {
+  color: var(--gs-muted);
+  font-size: 0.9rem;
+  margin-bottom: 1.75rem;
+}
+
+/* geofence ping — signature motif */
+.gs-ping {
+  position: relative;
+  width: 14px;
+  height: 14px;
+  display: inline-block;
+}
+.gs-ping::before, .gs-ping::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: var(--gs-teal);
+}
+.gs-ping::before {
+  animation: gs-ping-wave 2.2s cubic-bezier(0,0,0.2,1) infinite;
+}
+@keyframes gs-ping-wave {
+  0% { transform: scale(1); opacity: 0.7; }
+  75%, 100% { transform: scale(3.2); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .gs-ping::before { animation: none; display: none; }
+}
+.gs-ping-lg { width: 20px; height: 20px; }
+
+/* ---------- App shell (dashboards) ---------- */
+.gs-shell { display: flex; min-height: 100vh; }
+
+.gs-sidebar {
+  width: 250px;
+  flex-shrink: 0;
+  background: var(--gs-navy);
+  color: #cfd8e6;
+  display: flex;
+  flex-direction: column;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+}
+
+.gs-sidebar .gs-brand {
+  font-family: 'Sora', sans-serif;
+  font-weight: 700;
+  color: #fff;
+  padding: 1.3rem 1.4rem;
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-size: 1.05rem;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+.gs-sidebar .gs-role-tag {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--gs-teal);
+  background: rgba(18,137,122,0.18);
+  padding: 0.15rem 0.5rem;
+  border-radius: 20px;
+  margin-left: auto;
+}
+
+.gs-nav {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.75rem 0.6rem;
+}
+
+.gs-nav .gs-nav-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #6d7994;
+  padding: 0.9rem 0.7rem 0.35rem;
+}
+
+.gs-nav-link {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.55rem 0.7rem;
+  border-radius: 8px;
+  color: #cfd8e6;
+  font-size: 0.87rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.gs-nav-link i { font-size: 1rem; width: 1.1rem; text-align: center; }
+
+.gs-nav-link:hover { background: var(--gs-navy-3); color: #fff; }
+
+.gs-nav-link.active {
+  background: var(--gs-teal);
+  color: #fff;
+}
+
+.gs-nav-badge {
+  margin-left: auto;
+  background: var(--gs-red);
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 0.05rem 0.4rem;
+  border-radius: 10px;
+}
+
+.gs-sidebar-footer {
+  padding: 0.85rem;
+  border-top: 1px solid rgba(255,255,255,0.08);
+}
+
+.gs-sidebar-footer .btn {
+  width: 100%;
+}
+
+/* Main area */
+.gs-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.gs-topbar {
+  background: var(--gs-card);
+  border-bottom: 1px solid var(--gs-border);
+  padding: 0.85rem 1.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.gs-topbar h1 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.gs-topbar .gs-topbar-sub {
+  font-size: 0.8rem;
+  color: var(--gs-muted);
+}
+
+.gs-content {
+  padding: 1.75rem;
+  flex: 1;
+}
+
+.gs-section { display: none; }
+.gs-section.active { display: block; animation: gs-fade-in 0.25s ease; }
+
+@keyframes gs-fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Cards / stat tiles */
+.gs-card {
+  background: var(--gs-card);
+  border: 1px solid var(--gs-border);
+  border-radius: var(--gs-radius);
+  box-shadow: var(--gs-shadow);
+}
+
+.gs-card-body { padding: 1.25rem 1.4rem; }
+
+.gs-card-header {
+  padding: 1rem 1.4rem;
+  border-bottom: 1px solid var(--gs-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.gs-card-header h5 { margin: 0; font-size: 1rem; font-weight: 700; }
+
+.gs-stat {
+  background: var(--gs-card);
+  border: 1px solid var(--gs-border);
+  border-radius: var(--gs-radius);
+  padding: 1.1rem 1.3rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.gs-stat .gs-stat-label {
+  font-size: 0.78rem;
+  color: var(--gs-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 600;
+}
+
+.gs-stat .gs-stat-value {
+  font-family: 'Sora', sans-serif;
+  font-size: 1.85rem;
+  font-weight: 700;
+}
+
+.gs-stat .gs-stat-icon {
+  width: 38px; height: 38px;
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--gs-teal-light);
+  color: var(--gs-teal-dark);
+  font-size: 1.1rem;
+  margin-bottom: 0.25rem;
+}
+
+/* Buttons */
+.btn-gs-primary {
+  background: var(--gs-teal);
+  border-color: var(--gs-teal);
+  color: #fff;
+}
+.btn-gs-primary:hover { background: var(--gs-teal-dark); border-color: var(--gs-teal-dark); color: #fff; }
+.btn-gs-outline {
+  border-color: var(--gs-teal);
+  color: var(--gs-teal-dark);
+  background: transparent;
+}
+.btn-gs-outline:hover { background: var(--gs-teal-light); color: var(--gs-teal-dark); }
+
+/* Badges */
+.badge-status { font-weight: 600; font-size: 0.72rem; padding: 0.32em 0.6em; border-radius: 20px; }
+.badge-present { background: var(--gs-teal-light); color: var(--gs-teal-dark); }
+.badge-late { background: var(--gs-amber-light); color: #8a611f; }
+.badge-absent { background: var(--gs-red-light); color: var(--gs-red); }
+.badge-live {
+  background: var(--gs-teal-light); color: var(--gs-teal-dark);
+  display: inline-flex; align-items: center; gap: 0.4rem;
+}
+
+/* Tables */
+.table-gs thead th {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--gs-muted);
+  background: #f8f9fb;
+  border-bottom: 1px solid var(--gs-border);
+  font-weight: 700;
+}
+.table-gs td, .table-gs th { vertical-align: middle; padding: 0.65rem 0.85rem; }
+
+/* Notification list */
+.gs-notif {
+  padding: 0.9rem 1.1rem;
+  border-bottom: 1px solid var(--gs-border);
+  cursor: pointer;
+  display: flex;
+  gap: 0.75rem;
+}
+.gs-notif:hover { background: #f8f9fb; }
+.gs-notif.unread { background: var(--gs-teal-light); }
+.gs-notif:last-child { border-bottom: none; }
+.gs-notif-dot {
+  width: 8px; height: 8px; border-radius: 50%; background: var(--gs-teal);
+  margin-top: 0.4rem; flex-shrink: 0;
+}
+
+/* QR pages */
+.gs-qr-frame {
+  background: #fff;
+  border: 1px solid var(--gs-border);
+  border-radius: var(--gs-radius);
+  padding: 1.25rem;
+  display: inline-block;
+}
+.gs-qr-frame img { width: 260px; height: 260px; display: block; }
+
+.gs-scan-video-wrap {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  margin: 0 auto;
+  border-radius: var(--gs-radius);
+  overflow: hidden;
+  background: #000;
+  aspect-ratio: 1 / 1;
+}
+.gs-scan-video-wrap video { width: 100%; height: 100%; object-fit: cover; }
+.gs-scan-reticle {
+  position: absolute; inset: 12%;
+  border: 3px solid var(--gs-teal);
+  border-radius: 16px;
+  box-shadow: 0 0 0 999px rgba(0,0,0,0.35);
+}
+
+.gs-countdown {
+  font-family: 'Sora', sans-serif;
+  font-weight: 800;
+  font-size: 2.4rem;
+  color: var(--gs-teal-dark);
+}
+
+/* Utility */
+.gs-muted { color: var(--gs-muted); }
+.gs-empty {
+  text-align: center;
+  padding: 2.5rem 1rem;
+  color: var(--gs-muted);
+}
+.gs-empty i { font-size: 2rem; display: block; margin-bottom: 0.6rem; opacity: 0.5; }
+
+.gs-spinner-overlay {
+  position: fixed; inset: 0;
+  background: rgba(16,27,45,0.35);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+.gs-spinner-overlay.show { display: flex; }
+
+#gs-toast-stack {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 3000;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-width: 340px;
+}
+
+@media (max-width: 991px) {
+  .gs-auth-side { display: none; }
+  .gs-sidebar { position: fixed; left: -260px; z-index: 1050; transition: left 0.2s ease; box-shadow: var(--gs-shadow); }
+  .gs-sidebar.gs-sidebar-open { left: 0; }
+  .gs-mobile-toggle { display: inline-flex !important; }
+}
+.gs-mobile-toggle { display: none; }
+
+/* ---- Reports Module (Phase 5A) ------------------------------------------------------ */
+#rep-tabs .nav-link {
+  color: var(--gs-text);
+  background: var(--gs-card);
+  border: 1px solid var(--gs-border);
+  border-radius: 999px;
+  padding: 0.35rem 0.9rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin: 0 0.25rem 0.5rem 0;
+}
+#rep-tabs .nav-link.active {
+  background: var(--gs-teal);
+  border-color: var(--gs-teal);
+  color: #fff;
+}
+#rep-tabs .nav-link:hover:not(.active) {
+  border-color: var(--gs-teal);
+  color: var(--gs-teal-dark);
+}
+
+/* ---- Analytics Module (Phase 5B) ----------------------------------------------------- */
+.gs-chart-wrap {
+  position: relative;
+  height: 260px;
+  width: 100%;
+}
+.gs-chart-wrap canvas { max-height: 100%; }
+.gs-chart-state {
+  height: 100%;
+  min-height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--gs-muted);
+  font-size: 0.85rem;
+  text-align: center;
+  flex-direction: row;
+}
+.gs-chart-empty {
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.gs-chart-empty i { font-size: 1.8rem; color: var(--gs-border); }

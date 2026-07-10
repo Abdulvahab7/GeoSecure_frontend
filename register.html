@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Create an account — GeoSecure Attendance</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/ui-ux.css">
+</head>
+<body>
+<div class="gs-auth-shell">
+  <div class="gs-auth-side">
+    <div class="gs-brand"><span class="gs-ping"></span> GeoSecure Attendance</div>
+    <h1>Join your class in a couple of minutes.</h1>
+    <p>Create your account, then wait for an administrator to review and approve
+      it. You'll be able to sign in as soon as it's approved.</p>
+  </div>
+  <div class="gs-auth-form-wrap">
+    <div class="gs-auth-card" id="register-card" style="max-width:560px;">
+
+      <!-- ================= Registration form ================= -->
+      <div id="register-form-view">
+        <h2>Create an account</h2>
+        <div class="gs-sub">Student and faculty registrations are reviewed by an administrator before you can sign in.</div>
+
+        <div id="register-error" class="alert alert-danger py-2 px-3 small d-none"></div>
+
+        <form id="register-form" novalidate>
+
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">I am registering as</label>
+            <div class="btn-group w-100" role="group" aria-label="Role">
+              <input type="radio" class="btn-check" name="reg-role" id="role-student" value="student" checked>
+              <label class="btn btn-outline-secondary" for="role-student"><i class="bi bi-mortarboard"></i> Student</label>
+              <input type="radio" class="btn-check" name="reg-role" id="role-faculty" value="faculty">
+              <label class="btn btn-outline-secondary" for="role-faculty"><i class="bi bi-person-badge"></i> Faculty</label>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label small fw-semibold">Full name</label>
+              <input type="text" class="form-control" id="reg-full-name" required placeholder="Jane Doe">
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label small fw-semibold">Phone number</label>
+              <input type="tel" class="form-control" id="reg-phone" required placeholder="9876543210">
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">Email</label>
+            <input type="email" class="form-control" id="reg-email" required autocomplete="username" placeholder="you@institution.edu">
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label small fw-semibold">Password</label>
+              <input type="password" class="form-control" id="reg-password" required autocomplete="new-password" placeholder="••••••••">
+              <div class="form-text">At least 8 characters, with a letter and a number.</div>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label small fw-semibold">Confirm password</label>
+              <input type="password" class="form-control" id="reg-confirm-password" required autocomplete="new-password" placeholder="••••••••">
+            </div>
+          </div>
+
+          <!-- ---- Student-only fields ---- -->
+          <div id="student-fields">
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label small fw-semibold">Register number</label>
+                <input type="text" class="form-control" id="reg-register-no" placeholder="21CSE045">
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label small fw-semibold">Department</label>
+                <select class="form-select" id="reg-student-department"><option value="">Select…</option></select>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label small fw-semibold">Year</label>
+                <select class="form-select" id="reg-year">
+                  <option value="">Select…</option>
+                  <option value="1">1st Year</option>
+                  <option value="2">2nd Year</option>
+                  <option value="3">3rd Year</option>
+                  <option value="4">4th Year</option>
+                </select>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label small fw-semibold">Section</label>
+                <input type="text" class="form-control" id="reg-section" placeholder="A" maxlength="5">
+              </div>
+            </div>
+          </div>
+
+          <!-- ---- Faculty-only fields ---- -->
+          <div id="faculty-fields" class="d-none">
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label small fw-semibold">Employee ID</label>
+                <input type="text" class="form-control" id="reg-employee-id" placeholder="EMP1042">
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label small fw-semibold">Department</label>
+                <select class="form-select" id="reg-faculty-department"><option value="">Select…</option></select>
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label small fw-semibold">Designation</label>
+              <input type="text" class="form-control" id="reg-designation" placeholder="Assistant Professor">
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-gs-primary w-100 py-2 fw-semibold mt-2" id="register-submit-btn">
+            Create account
+          </button>
+        </form>
+
+        <div class="text-center gs-muted small mt-4">
+          Already have an account? <a href="login.html">Sign in</a>
+        </div>
+      </div>
+
+      <!-- ================= Success view ================= -->
+      <div id="register-success-view" class="d-none text-center py-3">
+        <div class="display-6 text-success mb-3"><i class="bi bi-check-circle-fill"></i></div>
+        <h2>Registration Successful</h2>
+        <p class="gs-sub">Your account has been created successfully.</p>
+        <p class="gs-sub">Please wait for an administrator to approve your account before logging in.</p>
+        <a href="login.html" class="btn btn-gs-primary px-4 mt-2">Back to Login</a>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div id="gs-toast-stack"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="js/config.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/api.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/register.js"></script>
+</body>
+</html>
