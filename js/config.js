@@ -9,7 +9,7 @@
    backend/src/main/resources/application.properties.
    ========================================================================== */
 
-const GS_API_BASE = 'https://geosecure-backend-7p23.onrender.com'; // backend origin (frontend is served separately)
+const GS_API_BASE = 'https://geosecure-backend-7p23.onrender.com/api'; // backend origin (frontend is served separately)
 const GS_QR_EXPIRY_FALLBACK_SEC = 50; // mirrors geosecure.qr.expiry-seconds default
 const GS_DEFAULTER_THRESHOLD = 75;    // mirrors geosecure.attendance.defaulter-threshold default
 
