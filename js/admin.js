@@ -421,7 +421,7 @@
           <select class="form-select" id="f-subjectId">${subjects.map(s => `<option value="${s.id}">${GsUtil.escapeHtml(s.name)}</option>`).join('')}</select></div>
         <div class="row">
           <div class="col-6 mb-3"><label class="form-label small fw-semibold">Day of week</label>
-            <select class="form-select" id="f-dayOfWeek">${['MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY'].map(d => `<option value="${d}">${d[0]}${d.slice(1).toLowerCase()}</option>`).join('')}</select></div>
+            <select class="form-select" id="f-dayOfWeek">${['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'].map(d => `<option value="${d}">${d}</option>`).join('')}</select></div>
           <div class="col-6 mb-3"><label class="form-label small fw-semibold">Session number (1-8)</label>
             <input type="number" min="1" max="8" class="form-control" id="f-sessionNumber" required></div>
         </div>
