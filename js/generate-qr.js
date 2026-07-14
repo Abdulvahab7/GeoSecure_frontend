@@ -22,6 +22,27 @@
     return fallback;
   }
 
+  /**
+   * Normalizes an ISO-8601 timestamp string to be unambiguously parsed as UTC.
+   *
+   * Bug this fixes: if the backend sends a timestamp with no timezone info
+   * (e.g. "2026-07-14T10:30:00" instead of "2026-07-14T10:30:00Z"), the
+   * native Date constructor treats it as LOCAL time in the browser. For a
+   * client in a timezone ahead of UTC (e.g. IST, +5:30), this makes the
+   * parsed expiresAt appear hours earlier than the real expiry, so
+   * (expiresAt - now) is negative immediately and the countdown shows
+   * "Expired" the instant the QR is generated.
+   *
+   * This helper only appends 'Z' when the string has no explicit zone
+   * designator (no trailing 'Z' and no +HH:MM/-HH:MM offset), so it's a
+   * no-op for any timestamp that's already zone-aware.
+   */
+  function toUtcDate(isoString) {
+    if (!isoString) return new Date(NaN);
+    const hasZone = /Z$|[+-]\d{2}:?\d{2}$/.test(isoString);
+    return new Date(hasZone ? isoString : isoString + 'Z');
+  }
+
   async function loadTodaySchedule() {
     try {
       const slots = await GsApi.get('/api/faculty/dashboard/today');
@@ -82,8 +103,16 @@
   function startCountdown(expiresAtIso) {
     const el = document.getElementById('qr-countdown');
     clearInterval(countdownTimer);
+
+    const expiresAtMs = toUtcDate(expiresAtIso).getTime();
+
     function tick() {
-      const remaining = Math.max(0, Math.floor((new Date(expiresAtIso).getTime() - Date.now()) / 1000));
+      if (Number.isNaN(expiresAtMs)) {
+        clearInterval(countdownTimer);
+        el.textContent = '--';
+        return;
+      }
+      const remaining = Math.max(0, Math.floor((expiresAtMs - Date.now()) / 1000));
       el.textContent = `${remaining}s`;
       if (remaining <= 0) {
         clearInterval(countdownTimer);
