@@ -366,8 +366,17 @@
     updateFn: (id, p) => GsApi.put(`/api/admin/students/${id}`, p),
   });
 
-  // ---- Timetable ------------------------------------------------------------------
+  // ---- Timetable (grid editor) ------------------------------------------------------
+  const TT_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+  const TT_SESSIONS = [1, 2, 3, 4, 5, 6, 7, 8];
+
   const TimetableMod = {
+    classes: [],
+    faculty: [],
+    subjects: [],
+    slots: [],        // flat list from the API for the selected class
+    slotByKey: {},     // "day-session" -> slot
+
     async render() {
       const el = document.getElementById('sec-timetable');
       el.innerHTML = `
@@ -375,80 +384,187 @@
           <div class="gs-card-header">
             <h5>Timetable</h5>
             <div class="d-flex gap-2 align-items-center">
-              <select class="form-select form-select-sm" id="tt-class-filter" style="width:220px;"></select>
-              <button class="btn btn-gs-primary btn-sm" id="tt-add-btn"><i class="bi bi-plus-lg"></i> New slot</button>
+              <select class="form-select form-select-sm" id="tt-class-filter" style="width:260px;"></select>
             </div>
           </div>
-          <div class="table-responsive"><table class="table table-gs mb-0">
-            <thead><tr><th>Day</th><th>Session</th><th>Class</th><th>Subject</th><th>Faculty</th><th>Room</th></tr></thead>
-            <tbody id="tt-body"><tr><td colspan="6" class="text-center py-4"><span class="spinner-border spinner-border-sm"></span></td></tr></tbody>
-          </table></div>
+          <div class="gs-card-body">
+            <div class="form-text mb-2">Click <strong>+</strong> on an empty cell to schedule a session. Click a filled cell to edit or delete it.</div>
+            <div id="tt-grid-wrap"><div class="text-center py-4"><span class="spinner-border spinner-border-sm"></span></div></div>
+          </div>
+        </div>
+
+        <!-- Dedicated modal for the timetable cell editor (kept separate from the shared gs-entity-modal
+             so the grid can stay untouched underneath while editing). -->
+        <div class="modal fade" id="tt-cell-modal" tabindex="-1">
+          <div class="modal-dialog">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title" id="tt-cell-modal-title">Schedule session</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+              </div>
+              <div class="modal-body">
+                <div class="alert alert-danger py-2 d-none" id="tt-cell-error"></div>
+                <input type="hidden" id="tt-f-id">
+                <input type="hidden" id="tt-f-classId">
+                <input type="hidden" id="tt-f-dayOfWeek">
+                <input type="hidden" id="tt-f-sessionNumber">
+                <div class="mb-2 small text-muted" id="tt-cell-slot-label"></div>
+                <div class="mb-3"><label class="form-label small fw-semibold">Faculty</label>
+                  <select class="form-select" id="tt-f-facultyId" required></select></div>
+                <div class="mb-3"><label class="form-label small fw-semibold">Subject</label>
+                  <select class="form-select" id="tt-f-subjectId" required></select></div>
+                <div class="mb-3"><label class="form-label small fw-semibold">Room</label>
+                  <input type="text" class="form-control" id="tt-f-roomNumber" placeholder="e.g. LH-204"></div>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-outline-danger me-auto d-none" id="tt-cell-delete-btn"><i class="bi bi-trash"></i> Delete</button>
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-gs-primary" id="tt-cell-save-btn">Save</button>
+              </div>
+            </div>
+          </div>
         </div>`;
 
-      const classes = await GsApi.get('/api/admin/classes');
-      document.getElementById('tt-class-filter').innerHTML =
-        `<option value="">All classes</option>` + classes.map(c => `<option value="${c.id}">${GsUtil.escapeHtml(c.name)} (${GsUtil.escapeHtml(c.section)})</option>`).join('');
-      document.getElementById('tt-class-filter').addEventListener('change', () => this.reload());
-      document.getElementById('tt-add-btn').addEventListener('click', () => this.openForm(classes));
-      await this.reload();
+      const [classes, faculty, subjects] = await Promise.all([
+        GsApi.get('/api/admin/classes'), GsApi.get('/api/admin/faculty'), GsApi.get('/api/admin/subjects'),
+      ]);
+      this.classes = classes;
+      this.faculty = faculty;
+      this.subjects = subjects;
+
+      const filter = document.getElementById('tt-class-filter');
+      filter.innerHTML = classes.map(c => `<option value="${c.id}">${GsUtil.escapeHtml(c.name)} (${GsUtil.escapeHtml(c.section)})</option>`).join('');
+      filter.addEventListener('change', () => this.reload());
+
+      document.getElementById('tt-cell-save-btn').addEventListener('click', () => this.saveCell());
+      document.getElementById('tt-cell-delete-btn').addEventListener('click', () => this.deleteCell());
+
+      if (classes.length) await this.reload();
+      else document.getElementById('tt-grid-wrap').innerHTML = `<div class="gs-empty border-0"><i class="bi bi-calendar-week"></i>No classes defined yet — add a class first.</div>`;
     },
 
     async reload() {
-      const body = document.getElementById('tt-body');
-      const classId = document.getElementById('tt-class-filter').value || undefined;
+      const wrap = document.getElementById('tt-grid-wrap');
+      const classId = document.getElementById('tt-class-filter').value;
+      if (!classId) return;
+      wrap.innerHTML = `<div class="text-center py-4"><span class="spinner-border spinner-border-sm"></span></div>`;
       try {
-        const rows = await GsApi.get('/api/admin/timetable', { classId });
-        body.innerHTML = rows.length ? rows.map(t => `
-          <tr><td>${GsUtil.escapeHtml(t.dayOfWeek)}</td><td>${t.sessionNumber}</td>
-          <td>${GsUtil.escapeHtml(t.className)}</td><td>${GsUtil.escapeHtml(t.subjectName)}</td>
-          <td>${GsUtil.escapeHtml(t.facultyName)}</td><td>${GsUtil.escapeHtml(t.roomNumber ?? '—')}</td></tr>`).join('')
-          : `<tr><td colspan="6" class="gs-empty border-0"><i class="bi bi-calendar-week"></i>No slots defined yet.</td></tr>`;
+        this.slots = await GsApi.get('/api/admin/timetable', { classId });
+        this.slotByKey = {};
+        this.slots.forEach(s => { this.slotByKey[`${s.dayOfWeek}-${s.sessionNumber}`] = s; });
+        this.paintGrid();
       } catch (err) {
-        body.innerHTML = `<tr><td colspan="6" class="text-danger text-center py-3">${GsUtil.escapeHtml(GsUtil.apiErrorMessage(err))}</td></tr>`;
+        wrap.innerHTML = `<div class="alert alert-danger py-2">${GsUtil.escapeHtml(GsUtil.apiErrorMessage(err))}</div>`;
       }
     },
 
-    async openForm(classes) {
-      const [faculty, subjects] = await Promise.all([GsApi.get('/api/admin/faculty'), GsApi.get('/api/admin/subjects')]);
-      const modalEl = document.getElementById('gs-entity-modal');
-      document.getElementById('gs-entity-modal-title').textContent = 'New timetable slot';
-      document.getElementById('gs-entity-modal-body').innerHTML = `
-        <div class="mb-3"><label class="form-label small fw-semibold">Class</label>
-          <select class="form-select" id="f-classId">${classes.map(c => `<option value="${c.id}">${GsUtil.escapeHtml(c.name)} (${GsUtil.escapeHtml(c.section)})</option>`).join('')}</select></div>
-        <div class="mb-3"><label class="form-label small fw-semibold">Faculty</label>
-          <select class="form-select" id="f-facultyId">${faculty.map(f => `<option value="${f.id}">${GsUtil.escapeHtml(f.name)}</option>`).join('')}</select></div>
-        <div class="mb-3"><label class="form-label small fw-semibold">Subject</label>
-          <select class="form-select" id="f-subjectId">${subjects.map(s => `<option value="${s.id}">${GsUtil.escapeHtml(s.name)}</option>`).join('')}</select></div>
-        <div class="row">
-          <div class="col-6 mb-3"><label class="form-label small fw-semibold">Day of week</label>
-            <select class="form-select" id="f-dayOfWeek">${['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'].map(d => `<option value="${d}">${d}</option>`).join('')}</select></div>
-          <div class="col-6 mb-3"><label class="form-label small fw-semibold">Session number (1-8)</label>
-            <input type="number" min="1" max="8" class="form-control" id="f-sessionNumber" required></div>
-        </div>
-        <div class="mb-3"><label class="form-label small fw-semibold">Room number</label><input type="text" class="form-control" id="f-roomNumber"></div>`;
+    paintGrid() {
+      const wrap = document.getElementById('tt-grid-wrap');
+      const cls = this.classes.find(c => String(c.id) === document.getElementById('tt-class-filter').value);
+      const heading = cls ? `${GsUtil.escapeHtml(cls.name)} ${GsUtil.escapeHtml(cls.section || '')}` : '';
 
-      const form = document.getElementById('gs-entity-form');
-      const newForm = form.cloneNode(true);
-      form.parentNode.replaceChild(newForm, form);
+      let html = `<div class="fw-semibold mb-2">${heading}</div>`;
+      html += `<div class="table-responsive"><table class="table table-bordered table-gs text-center align-middle mb-0 gs-tt-grid">
+        <thead><tr><th>Session</th>${TT_DAYS.map(d => `<th>${d}</th>`).join('')}</tr></thead><tbody>`;
 
-      newForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const payload = {
-          classId: Number(document.getElementById('f-classId').value),
-          facultyId: Number(document.getElementById('f-facultyId').value),
-          subjectId: Number(document.getElementById('f-subjectId').value),
-          dayOfWeek: document.getElementById('f-dayOfWeek').value,
-          sessionNumber: Number(document.getElementById('f-sessionNumber').value),
-          roomNumber: document.getElementById('f-roomNumber').value || null,
-        };
-        try {
-          await GsApi.post('/api/admin/timetable', payload);
-          bootstrap.Modal.getOrCreateInstance(modalEl).hide();
-          GsUtil.toast('Timetable slot created.');
-          TimetableMod.reload();
-        } catch (err) { GsUtil.toast(GsUtil.apiErrorMessage(err), 'danger'); }
+      TT_SESSIONS.forEach(session => {
+        html += `<tr><th class="text-muted">${session}</th>`;
+        TT_DAYS.forEach(day => {
+          const slot = this.slotByKey[`${day}-${session}`];
+          if (slot) {
+            html += `<td class="gs-tt-cell gs-tt-filled" data-day="${day}" data-session="${session}" role="button">
+              <div class="fw-semibold small">${GsUtil.escapeHtml(slot.subjectName)}</div>
+              <div class="text-muted" style="font-size:.75rem;">${GsUtil.escapeHtml(slot.facultyName)}</div>
+              ${slot.roomNumber ? `<div class="text-muted" style="font-size:.7rem;">${GsUtil.escapeHtml(slot.roomNumber)}</div>` : ''}
+            </td>`;
+          } else {
+            html += `<td class="gs-tt-cell gs-tt-empty" data-day="${day}" data-session="${session}" role="button">+</td>`;
+          }
+        });
+        html += `</tr>`;
       });
-      bootstrap.Modal.getOrCreateInstance(modalEl).show();
+      html += `</tbody></table></div>`;
+      wrap.innerHTML = html;
+
+      wrap.querySelectorAll('.gs-tt-cell').forEach(cell => {
+        cell.addEventListener('click', () => this.openCell(cell.dataset.day, Number(cell.dataset.session)));
+      });
+    },
+
+    openCell(day, session) {
+      const classId = document.getElementById('tt-class-filter').value;
+      const slot = this.slotByKey[`${day}-${session}`];
+      const errBox = document.getElementById('tt-cell-error');
+      errBox.classList.add('d-none');
+      errBox.textContent = '';
+
+      document.getElementById('tt-f-id').value = slot ? slot.id : '';
+      document.getElementById('tt-f-classId').value = classId;
+      document.getElementById('tt-f-dayOfWeek').value = day;
+      document.getElementById('tt-f-sessionNumber').value = session;
+      document.getElementById('tt-cell-slot-label').textContent = `${day}, session ${session}`;
+      document.getElementById('tt-cell-modal-title').textContent = slot ? 'Edit session' : 'Schedule session';
+      document.getElementById('tt-cell-delete-btn').classList.toggle('d-none', !slot);
+
+      const facultySel = document.getElementById('tt-f-facultyId');
+      facultySel.innerHTML = this.faculty.map(f => `<option value="${f.id}">${GsUtil.escapeHtml(f.name)}</option>`).join('');
+      const subjectSel = document.getElementById('tt-f-subjectId');
+      subjectSel.innerHTML = this.subjects.map(s => `<option value="${s.id}">${GsUtil.escapeHtml(s.name)}</option>`).join('');
+
+      if (slot) {
+        facultySel.value = slot.facultyId;
+        subjectSel.value = slot.subjectId;
+        document.getElementById('tt-f-roomNumber').value = slot.roomNumber || '';
+      } else {
+        document.getElementById('tt-f-roomNumber').value = '';
+      }
+
+      bootstrap.Modal.getOrCreateInstance(document.getElementById('tt-cell-modal')).show();
+    },
+
+    buildPayload() {
+      return {
+        classId: Number(document.getElementById('tt-f-classId').value),
+        facultyId: Number(document.getElementById('tt-f-facultyId').value),
+        subjectId: Number(document.getElementById('tt-f-subjectId').value),
+        dayOfWeek: document.getElementById('tt-f-dayOfWeek').value,
+        sessionNumber: Number(document.getElementById('tt-f-sessionNumber').value),
+        roomNumber: document.getElementById('tt-f-roomNumber').value.trim() || null,
+      };
+      // Note: faculty_subject_id is intentionally NOT sent — the backend resolves/creates it
+      // from facultyId + subjectId + classId, so the user never has to pick a database id.
+    },
+
+    async saveCell() {
+      const id = document.getElementById('tt-f-id').value;
+      const payload = this.buildPayload();
+      const errBox = document.getElementById('tt-cell-error');
+      errBox.classList.add('d-none');
+      try {
+        if (id) await GsApi.put(`/api/admin/timetable/${id}`, payload);
+        else await GsApi.post('/api/admin/timetable', payload);
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('tt-cell-modal')).hide();
+        GsUtil.toast(id ? 'Session updated.' : 'Session scheduled.');
+        await this.reload();
+      } catch (err) {
+        errBox.textContent = GsUtil.apiErrorMessage(err);
+        errBox.classList.remove('d-none');
+      }
+    },
+
+    async deleteCell() {
+      const id = document.getElementById('tt-f-id').value;
+      if (!id) return;
+      const ok = await GsUtil.confirm({ title: 'Delete this session?', body: 'This slot will be removed from the timetable.', confirmText: 'Delete', danger: true });
+      if (!ok) return;
+      try {
+        await GsApi.delete(`/api/admin/timetable/${id}`);
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('tt-cell-modal')).hide();
+        GsUtil.toast('Session removed.');
+        await this.reload();
+      } catch (err) {
+        GsUtil.toast(GsUtil.apiErrorMessage(err), 'danger');
+      }
     },
   };
 
@@ -1042,4 +1158,3 @@
     ensureLoaded('overview');
   }
 })();
-
