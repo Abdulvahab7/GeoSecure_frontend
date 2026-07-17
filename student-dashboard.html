@@ -1,224 +1,91 @@
-/* ==========================================================================
-   student.js — Student dashboard: routing + all sections
-   ========================================================================== */
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Student — GeoSecure Attendance</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/ui-ux.css">
+</head>
+<body>
+<div class="gs-shell">
 
-(function () {
-  const user = GsAuth.requireRole('STUDENT');
-  if (!user) return;
+  <aside class="gs-sidebar" id="gs-sidebar">
+    <div class="gs-brand"><span class="gs-ping"></span> GeoSecure <span class="gs-role-tag">Student</span></div>
+    <nav class="gs-nav" id="gs-nav">
+      <div class="gs-nav-label">Overview</div>
+      <div class="gs-nav-link active" data-section="overview"><i class="bi bi-speedometer2"></i> My attendance</div>
 
-  document.getElementById('topbar-user').textContent = `${user.username} · ${user.email}`;
-  document.getElementById('logout-btn').addEventListener('click', GsAuth.logout);
+      <div class="gs-nav-label">Attendance</div>
+      <div class="gs-nav-link" data-href="scan-qr.html"><i class="bi bi-qr-code-scan"></i> Scan QR</div>
+      <div class="gs-nav-link" data-section="subjectwise"><i class="bi bi-journal-bookmark"></i> Subject-wise</div>
+      <div class="gs-nav-link" data-section="monthly"><i class="bi bi-calendar3"></i> Monthly history</div>
+      <div class="gs-nav-link" data-section="recent"><i class="bi bi-clock-history"></i> Recent activity</div>
 
-  const sectionTitles = {
-    overview: 'My attendance', subjectwise: 'Subject-wise', monthly: 'Monthly history',
-    recent: 'Recent activity', profile: 'Profile', settings: 'Settings',
-    notifications: 'Notifications',
-  };
-  const loadedSections = new Set();
+      <div class="gs-nav-label">Account</div>
+      <div class="gs-nav-link" data-href="notifications.html"><i class="bi bi-bell"></i> Notifications</div>
+      <div class="gs-nav-link" data-section="profile"><i class="bi bi-person-circle"></i> Profile</div>
+      <div class="gs-nav-link" data-section="settings"><i class="bi bi-gear"></i> Settings</div>
+    </nav>
+    <div class="gs-sidebar-footer">
+      <button class="btn btn-outline-light btn-sm" id="logout-btn"><i class="bi bi-box-arrow-right"></i> Sign out</button>
+    </div>
+  </aside>
 
-  document.querySelectorAll('.gs-nav-link').forEach(link => {
-    link.addEventListener('click', () => {
-      if (link.dataset.href) { window.location.href = link.dataset.href; return; }
-      const target = link.dataset.section;
-      document.querySelectorAll('.gs-nav-link').forEach(l => l.classList.remove('active'));
-      link.classList.add('active');
-      document.querySelectorAll('.gs-section').forEach(s => s.classList.remove('active'));
-      document.getElementById(`sec-${target}`).classList.add('active');
-      document.getElementById('topbar-title').textContent = sectionTitles[target] || 'My attendance';
-      document.getElementById('gs-sidebar').classList.remove('gs-sidebar-open');
-      GsUX?.setBreadcrumb(['Student', sectionTitles[target] || 'My attendance']);
-      GsUX?.markActiveNav(target);
-      ensureLoaded(target);
-    });
-  });
-
-  document.getElementById('sidebar-toggle')?.addEventListener('click', () => {
-    document.getElementById('gs-sidebar').classList.toggle('gs-sidebar-open');
-  });
-
-  function ensureLoaded(section) {
-    if (loadedSections.has(section)) return;
-    loadedSections.add(section);
-    const loaders = {
-      subjectwise: renderSubjectwise, monthly: renderMonthly, recent: renderRecent,
-      profile: () => GsProfile.mount('sec-profile', 'STUDENT'), settings: renderSettings,
-      notifications: () => GsNotifications.mount('sec-notifications', 'STUDENT'),
-    };
-    loaders[section]?.();
-  }
-
-
-  function pick(obj, candidates, fallback) {
-    for (const key of candidates) {
-      if (obj && obj[key] !== undefined && obj[key] !== null) return obj[key];
-    }
-    return fallback;
-  }
-
-  // ---- Overview: stat tiles + subject summary (markup already in HTML) --------------
-  async function loadOverview() {
-    try {
-      const summary = await GsApi.get('/api/student/attendance/summary');
-      renderStats(summary);
-      renderSubjectSummaryTable(summary);
-    } catch (err) {
-      document.getElementById('student-stats').innerHTML = `<div class="col-12"><div class="alert alert-danger py-2">${GsUtil.escapeHtml(GsUtil.apiErrorMessage(err))}</div></div>`;
-    }
-  }
-
-  function renderStats(rows) {
-    let totalPresent = 0, totalSessions = 0;
-    rows.forEach(r => {
-      totalPresent += Number(pick(r, ['presentCount', 'totalPresent', 'present'], 0)) || 0;
-      totalSessions += Number(pick(r, ['totalSessions', 'sessionCount', 'total'], 0)) || 0;
-    });
-    const totalAbsent = Math.max(totalSessions - totalPresent, 0);
-    const overallPct = totalSessions ? (totalPresent / totalSessions) * 100 : null;
-
-    const tiles = [
-      ['Total classes', totalSessions, 'bi-journal-bookmark'],
-      ['Present', totalPresent, 'bi-person-check'],
-      ['Absent', totalAbsent, 'bi-person-x'],
-      ['Overall attendance', GsUtil.pct(overallPct), 'bi-graph-up'],
-    ];
-    document.getElementById('student-stats').innerHTML = tiles.map(([label, val, icon]) => `
-      <div class="col-6 col-lg-3">
-        <div class="gs-stat">
-          <div class="gs-stat-icon"><i class="bi ${icon}"></i></div>
-          <div class="gs-stat-label">${label}</div>
-          <div class="gs-stat-value">${GsUtil.escapeHtml(String(val))}</div>
+  <div class="gs-main">
+    <div class="gs-topbar">
+      <div class="d-flex align-items-center gap-3">
+        <button class="btn btn-light btn-sm gs-mobile-toggle" id="sidebar-toggle"><i class="bi bi-list"></i></button>
+        <div>
+          <h1 id="topbar-title">My attendance</h1>
+          <div class="gs-topbar-sub" id="topbar-user"></div>
         </div>
-      </div>`).join('');
-  }
+      </div>
+      <a href="scan-qr.html" class="btn btn-gs-primary btn-sm"><i class="bi bi-qr-code-scan"></i> Scan QR</a>
+    </div>
 
-  function renderSubjectSummaryTable(rows) {
-    const body = document.getElementById('subject-summary-body');
-    body.innerHTML = rows.length ? rows.map(r => {
-      const present = Number(pick(r, ['presentCount', 'totalPresent', 'present'], 0)) || 0;
-      const total = Number(pick(r, ['totalSessions', 'sessionCount', 'total'], 0)) || 0;
-      const absent = Math.max(total - present, 0);
-      return `
-      <tr>
-        <td>${GsUtil.escapeHtml(pick(r, ['subjectName', 'subject'], '—'))}</td>
-        <td>${total}</td>
-        <td>${present}</td>
-        <td>${absent}</td>
-        <td>${GsUtil.pct(pick(r, ['percentage', 'attendancePercentage'], null))}</td>
-      </tr>`;
-    }).join('') : `<tr><td colspan="5" class="gs-empty border-0"><i class="bi bi-journal-bookmark"></i>No attendance recorded yet.</td></tr>`;
-  }
+    <div class="gs-content" id="gs-content-main">
 
-  // ---- Subject-wise (drill into one subject) -----------------------------------------
-  async function renderSubjectwise() {
-    const el = document.getElementById('sec-subjectwise');
-    let summary = [];
-    try { summary = await GsApi.get('/api/student/attendance/summary'); } catch (e) { /* ignore */ }
-
-    el.innerHTML = `
-      <div class="gs-card">
-        <div class="gs-card-header">
-          <h5>Subject-wise report</h5>
-          <select class="form-select form-select-sm" id="sw-subject-select" style="width:260px;">
-            ${summary.map(r => {
-              const id = pick(r, ['subjectId', 'id'], '');
-              const name = pick(r, ['subjectName', 'subject'], 'Subject');
-              return `<option value="${id}">${GsUtil.escapeHtml(name)}</option>`;
-            }).join('')}
-          </select>
+      <section class="gs-section active" id="sec-overview">
+        <div class="row g-3 mb-4" id="student-stats"></div>
+        <div class="gs-card">
+          <div class="gs-card-header"><h5>Attendance by subject</h5></div>
+          <div class="table-responsive"><table class="table table-gs mb-0">
+            <thead><tr><th>Subject</th><th>Total</th><th>Present</th><th>Absent</th><th>Percentage</th></tr></thead>
+            <tbody id="subject-summary-body"></tbody>
+          </table></div>
         </div>
-        <div class="gs-card-body" id="sw-report-body"><div class="gs-empty border-0"><i class="bi bi-journal-bookmark"></i>Pick a subject above.</div></div>
-      </div>`;
+      </section>
 
-    const select = document.getElementById('sw-subject-select');
-    select.addEventListener('change', () => loadSubjectDetail(select.value));
-    if (select.value) loadSubjectDetail(select.value);
-  }
+      <section class="gs-section" id="sec-subjectwise"></section>
+      <section class="gs-section" id="sec-monthly"></section>
+      <section class="gs-section" id="sec-recent"></section>
+      <section class="gs-section" id="sec-profile"></section>
+      <section class="gs-section" id="sec-settings"></section>
 
-  async function loadSubjectDetail(subjectId) {
-    if (!subjectId) return;
-    const container = document.getElementById('sw-report-body');
-    container.innerHTML = `<div class="text-center py-3"><span class="spinner-border spinner-border-sm"></span></div>`;
-    try {
-      const rows = await GsApi.get(`/api/student/attendance/subject/${subjectId}`);
-      const subjectName = document.getElementById('sw-subject-select').selectedOptions[0]?.textContent || 'Subject';
-      GsReportUI.renderReportTable({
-        container, rows, title: `Subject-wise report — ${subjectName}`,
-        emptyMessage: 'No sessions recorded for this subject yet.', emptyIcon: 'bi-inbox',
-        formatters: Object.fromEntries(
-          (rows[0] ? Object.keys(rows[0]) : []).filter(k => /status/i.test(k)).map(k => [k, (v) => GsUtil.statusBadge(v)])
-        ),
-      });
-    } catch (err) {
-      container.innerHTML = `<div class="alert alert-danger py-2">${GsUtil.escapeHtml(GsUtil.apiErrorMessage(err))}</div>`;
-    }
-  }
+    </div>
+  </div>
+</div>
 
-  // ---- Monthly history -----------------------------------------------------------------
-  async function renderMonthly() {
-    const el = document.getElementById('sec-monthly');
-    el.innerHTML = `
-      <div class="gs-card">
-        <div class="gs-card-header"><h5>Monthly attendance report</h5></div>
-        <div class="gs-card-body" id="monthly-report-body"><div class="text-center py-4"><span class="spinner-border spinner-border-sm"></span></div></div>
-      </div>`;
-    const container = document.getElementById('monthly-report-body');
-    try {
-      const rows = await GsApi.get('/api/student/attendance/monthly');
-      GsReportUI.renderReportTable({
-        container, rows, title: 'Monthly attendance report',
-        emptyMessage: 'No attendance history yet.', emptyIcon: 'bi-calendar3',
-        formatters: Object.fromEntries(
-          (rows[0] ? Object.keys(rows[0]) : []).filter(k => /percent/i.test(k)).map(k => [k, (v) => GsUtil.pct(v)])
-        ),
-      });
-    } catch (err) {
-      container.innerHTML = `<div class="alert alert-danger py-2">${GsUtil.escapeHtml(GsUtil.apiErrorMessage(err))}</div>`;
-    }
-  }
+<div id="gs-toast-stack"></div>
+<div class="gs-spinner-overlay" id="gs-spinner-overlay"><div class="spinner-border text-light"></div></div>
 
-  // ---- Recent activity ------------------------------------------------------------------
-  async function renderRecent() {
-    const el = document.getElementById('sec-recent');
-    el.innerHTML = `
-      <div class="gs-card">
-        <div class="gs-card-header"><h5>Recent activity</h5></div>
-        <div class="gs-card-body" id="recent-report-body"><div class="text-center py-4"><span class="spinner-border spinner-border-sm"></span></div></div>
-      </div>`;
-    const container = document.getElementById('recent-report-body');
-    try {
-      const rows = await GsApi.get('/api/student/attendance/recent', { limit: 20 });
-      GsReportUI.renderReportTable({
-        container, rows, title: 'Recent activity',
-        emptyMessage: 'No recent activity yet.', emptyIcon: 'bi-clock-history',
-        formatters: Object.fromEntries(
-          (rows[0] ? Object.keys(rows[0]) : []).filter(k => /status/i.test(k)).map(k => [k, (v) => GsUtil.statusBadge(v)])
-        ),
-      });
-    } catch (err) {
-      container.innerHTML = `<div class="alert alert-danger py-2">${GsUtil.escapeHtml(GsUtil.apiErrorMessage(err))}</div>`;
-    }
-  }
-
-  function renderSettings() {
-    const el = document.getElementById('sec-settings');
-    el.innerHTML = `
-      <div class="gs-card" style="max-width:520px;">
-        <div class="gs-card-header"><h5>Preferences</h5></div>
-        <div class="gs-card-body">
-          <div class="form-check form-switch mb-2">
-            <input class="form-check-input" type="checkbox" id="pref-low-attendance-alert" checked>
-            <label class="form-check-label" for="pref-low-attendance-alert">Highlight subjects below ${GS_DEFAULTER_THRESHOLD}% on my overview</label>
-          </div>
-          <div class="form-text mb-3">Preferences are stored on this device only — there is no backend settings endpoint yet.</div>
-          <button class="btn btn-gs-primary btn-sm" id="save-prefs-btn">Save preferences</button>
-        </div>
-      </div>`;
-    document.getElementById('pref-low-attendance-alert').checked = localStorage.getItem('gs_low_attendance_alert') !== 'off';
-    document.getElementById('save-prefs-btn').addEventListener('click', () => {
-      localStorage.setItem('gs_low_attendance_alert', document.getElementById('pref-low-attendance-alert').checked ? 'on' : 'off');
-      GsUtil.toast('Preferences saved on this device.');
-    });
-  }
-
-  loadOverview();
-})();
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
+<script src="js/config.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/api.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/ui-ux.js"></script>
+<script src="js/perf.js"></script>
+<script src="js/security.js"></script>
+<script src="js/reports.js"></script>
+<script src="js/profile.js"></script>
+<script src="js/student.js"></script>
+</body>
+</html>
