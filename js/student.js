@@ -72,14 +72,14 @@
       totalPresent += Number(pick(r, ['presentCount', 'totalPresent', 'present'], 0)) || 0;
       totalSessions += Number(pick(r, ['totalSessions', 'sessionCount', 'total'], 0)) || 0;
     });
+    const totalAbsent = Math.max(totalSessions - totalPresent, 0);
     const overallPct = totalSessions ? (totalPresent / totalSessions) * 100 : null;
-    const belowThreshold = rows.filter(r => Number(pick(r, ['percentage', 'attendancePercentage'], 100)) < GS_DEFAULTER_THRESHOLD).length;
 
     const tiles = [
-      ['Subjects tracked', rows.length, 'bi-journal-bookmark'],
+      ['Total classes', totalSessions, 'bi-journal-bookmark'],
+      ['Present', totalPresent, 'bi-person-check'],
+      ['Absent', totalAbsent, 'bi-person-x'],
       ['Overall attendance', GsUtil.pct(overallPct), 'bi-graph-up'],
-      ['Sessions attended', totalPresent, 'bi-person-check'],
-      ['Subjects below threshold', belowThreshold, 'bi-exclamation-triangle'],
     ];
     document.getElementById('student-stats').innerHTML = tiles.map(([label, val, icon]) => `
       <div class="col-6 col-lg-3">
@@ -93,13 +93,19 @@
 
   function renderSubjectSummaryTable(rows) {
     const body = document.getElementById('subject-summary-body');
-    body.innerHTML = rows.length ? rows.map(r => `
+    body.innerHTML = rows.length ? rows.map(r => {
+      const present = Number(pick(r, ['presentCount', 'totalPresent', 'present'], 0)) || 0;
+      const total = Number(pick(r, ['totalSessions', 'sessionCount', 'total'], 0)) || 0;
+      const absent = Math.max(total - present, 0);
+      return `
       <tr>
         <td>${GsUtil.escapeHtml(pick(r, ['subjectName', 'subject'], '—'))}</td>
-        <td>${GsUtil.escapeHtml(pick(r, ['presentCount', 'totalPresent', 'present'], '—'))}</td>
-        <td>${GsUtil.escapeHtml(pick(r, ['totalSessions', 'sessionCount', 'total'], '—'))}</td>
+        <td>${total}</td>
+        <td>${present}</td>
+        <td>${absent}</td>
         <td>${GsUtil.pct(pick(r, ['percentage', 'attendancePercentage'], null))}</td>
-      </tr>`).join('') : `<tr><td colspan="4" class="gs-empty border-0"><i class="bi bi-journal-bookmark"></i>No attendance recorded yet.</td></tr>`;
+      </tr>`;
+    }).join('') : `<tr><td colspan="5" class="gs-empty border-0"><i class="bi bi-journal-bookmark"></i>No attendance recorded yet.</td></tr>`;
   }
 
   // ---- Subject-wise (drill into one subject) -----------------------------------------
