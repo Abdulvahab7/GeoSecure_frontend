@@ -219,7 +219,7 @@
       const container = document.getElementById('rep-report-body');
       container.innerHTML = `<div class="text-center py-3"><span class="spinner-border spinner-border-sm"></span></div>`;
       try {
-        const rows = await GsApi.get(`/api/admin/reports/faculty-subjects/${id}`);
+        const rows = await GsApi.get(`/api/faculty/reports/subject/${id}`);
         const label = document.getElementById('rep-subject-select').selectedOptions[0]?.textContent || 'Subject';
         GsReportUI.renderReportTable({
           container, rows, title: `Subject-wise report — ${label}`,
