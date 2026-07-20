@@ -165,6 +165,37 @@ const GsUX = {
     form.querySelectorAll('.gs-field-error').forEach((e) => e.remove());
   },
 
+  /* ---------------- Modal cleanup ---------------- */
+  /**
+   * Closes any open Bootstrap modals via the proper Modal API (so the
+   * backdrop and body classes are cleaned up correctly), then, as a safety
+   * net, forcibly strips any leftover backdrop/body-lock state a moment
+   * later in case a modal was hidden abruptly (e.g. its section was
+   * navigated away from) and never fired its own cleanup.
+   *
+   * Bootstrap modals render their backdrop as a direct child of <body>,
+   * separate from the page section that opened them. If a section is
+   * hidden (display:none) via nav routing while its modal is still open,
+   * the modal's own content disappears with the section, but the
+   * full-viewport backdrop + `body.modal-open` (overflow:hidden) can be
+   * left behind — silently blocking all clicks/scroll on every other page
+   * until a manual refresh. This guards against that.
+   */
+  closeAllModals() {
+    document.querySelectorAll('.modal.show').forEach((m) => {
+      bootstrap?.Modal?.getInstance(m)?.hide();
+    });
+    setTimeout(() => {
+      const anyOpen = document.querySelector('.modal.show');
+      if (!anyOpen) {
+        document.querySelectorAll('.modal-backdrop').forEach((b) => b.remove());
+        document.body.classList.remove('modal-open');
+        document.body.style.removeProperty('overflow');
+        document.body.style.removeProperty('padding-right');
+      }
+    }, 350); // just past Bootstrap's default .3s fade transition
+  },
+
   /* ---------------- Keyboard / accessibility ---------------- */
   /** Closes the mobile sidebar on Escape, and adds a skip-to-content link if missing. */
   initA11y() {
@@ -178,9 +209,7 @@ const GsUX = {
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
         document.getElementById('gs-sidebar')?.classList.remove('gs-sidebar-open');
-        document.querySelectorAll('.modal.show').forEach((m) => {
-          bootstrap?.Modal?.getInstance(m)?.hide();
-        });
+        this.closeAllModals();
       }
     });
     document.querySelectorAll('.gs-nav-link').forEach((link) => {
