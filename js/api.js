@@ -42,10 +42,14 @@ async function gsRefreshAccessToken() {
 
 /**
  * @param {string} path e.g. '/api/admin/departments'
- * @param {object} options { method, body, params, isRetry }
+ * @param {object} options { method, body, params, isRetry, silent }
+ *   silent: true  -> used for background/non-critical calls (e.g. notification
+ *   polling). On failure (incl. 401) this NEVER clears storage or redirects
+ *   the page; it just throws GsApiError so the caller's own try/catch can
+ *   handle it locally without taking down the rest of the UI.
  */
 async function gsApi(path, options = {}) {
-  const { method = 'GET', body, params, isRetry = false } = options;
+  const { method = 'GET', body, params, isRetry = false, silent = false } = options;
 
   let url = `${GS_API_BASE}${path}`;
   if (params) {
@@ -82,7 +86,7 @@ async function gsApi(path, options = {}) {
     try { payload = JSON.parse(text); } catch (e) { payload = null; }
   }
 
-  if (res.status === 401 && !isRetry && GsStorage.getRefreshToken()) {
+  if (res.status === 401 && !isRetry && !silent && GsStorage.getRefreshToken()) {
     try {
       await gsRefreshAccessToken();
       return gsApi(path, { ...options, isRetry: true });
@@ -109,6 +113,19 @@ if (res.status === 401) {
         );
     }
 
+    // Silent/background requests (e.g. notification polling) must never
+    // clear session storage or force-navigate the whole tab away — a failed
+    // background poll should not take down an otherwise-working UI (open
+    // modals, in-progress forms, the timetable grid, etc.). Just throw so
+    // the caller's own try/catch can degrade gracefully.
+    if (silent) {
+        throw new GsApiError(
+            "Session expired. Please sign in again.",
+            "SESSION_EXPIRED",
+            401
+        );
+    }
+
     GsStorage.clear();
     window.location.href = "session-expired.html";
 
@@ -128,7 +145,7 @@ if (res.status === 401) {
 }
 
 const GsApi = {
-  get: (path, params) => gsApi(path, { method: 'GET', params }),
+  get: (path, params, opts) => gsApi(path, { method: 'GET', params, ...opts }),
   post: (path, body) => gsApi(path, { method: 'POST', body }),
   put: (path, body) => gsApi(path, { method: 'PUT', body }),
   patch: (path, body) => gsApi(path, { method: 'PATCH', body }),
