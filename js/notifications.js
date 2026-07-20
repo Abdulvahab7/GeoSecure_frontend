@@ -51,8 +51,15 @@ const GsNotifications = (function () {
       btn.addEventListener('click', async () => {
         try {
           const unread = await GsApi.get('/api/notifications/unread');
-          await Promise.all(unread.map(n => GsApi.post(`/api/notifications/${n.id}/read`)));
-          GsUtil.toast('All notifications marked as read.');
+          const results = await Promise.allSettled(unread.map(n => GsApi.post(`/api/notifications/${n.id}/read`)));
+          const failed = results.filter(r => r.status === 'rejected').length;
+          if (failed > 0) {
+            GsUtil.toast(`Marked ${results.length - failed} of ${results.length} as read (${failed} failed).`, 'warning');
+          } else {
+            GsUtil.toast('All notifications marked as read.');
+          }
+          // Re-render regardless of partial failures so the list/button never
+          // stays stuck in a stale or disabled state.
           load(container, role);
         } catch (err) {
           GsUtil.toast(GsUtil.apiErrorMessage(err), 'danger');
