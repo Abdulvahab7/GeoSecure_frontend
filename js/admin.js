@@ -502,34 +502,53 @@
     },
 
     openCell(day, session) {
-      const classId = document.getElementById('tt-class-filter').value;
-      const slot = this.slotByKey[`${day}-${session}`];
-      const errBox = document.getElementById('tt-cell-error');
-      errBox.classList.add('d-none');
-      errBox.textContent = '';
+      // Defensively clear any stray modal/backdrop left over from a previous
+      // action (e.g. a delete-confirm dialog that didn't fully tear down).
+      // Without this, showing tt-cell-modal on top of a stale backdrop is
+      // what makes the page look "frozen" — clicks stop reaching anything
+      // even though no error was thrown.
+      GsUX?.closeAllModals();
 
-      document.getElementById('tt-f-id').value = slot ? slot.id : '';
-      document.getElementById('tt-f-classId').value = classId;
-      document.getElementById('tt-f-dayOfWeek').value = day;
-      document.getElementById('tt-f-sessionNumber').value = session;
-      document.getElementById('tt-cell-slot-label').textContent = `${day}, session ${session}`;
-      document.getElementById('tt-cell-modal-title').textContent = slot ? 'Edit session' : 'Schedule session';
-      document.getElementById('tt-cell-delete-btn').classList.toggle('d-none', !slot);
+      try {
+        const classId = document.getElementById('tt-class-filter').value;
+        const slot = this.slotByKey[`${day}-${session}`];
+        const errBox = document.getElementById('tt-cell-error');
+        errBox.classList.add('d-none');
+        errBox.textContent = '';
 
-      const facultySel = document.getElementById('tt-f-facultyId');
-      facultySel.innerHTML = this.faculty.map(f => `<option value="${f.id}">${GsUtil.escapeHtml(f.name)}</option>`).join('');
-      const subjectSel = document.getElementById('tt-f-subjectId');
-      subjectSel.innerHTML = this.subjects.map(s => `<option value="${s.id}">${GsUtil.escapeHtml(s.name)}</option>`).join('');
+        document.getElementById('tt-f-id').value = slot ? slot.id : '';
+        document.getElementById('tt-f-classId').value = classId;
+        document.getElementById('tt-f-dayOfWeek').value = day;
+        document.getElementById('tt-f-sessionNumber').value = session;
+        document.getElementById('tt-cell-slot-label').textContent = `${day}, session ${session}`;
+        document.getElementById('tt-cell-modal-title').textContent = slot ? 'Edit session' : 'Schedule session';
+        document.getElementById('tt-cell-delete-btn').classList.toggle('d-none', !slot);
 
-      if (slot) {
-        facultySel.value = slot.facultyId;
-        subjectSel.value = slot.subjectId;
-        document.getElementById('tt-f-roomNumber').value = slot.roomNumber || '';
-      } else {
-        document.getElementById('tt-f-roomNumber').value = '';
+        const facultySel = document.getElementById('tt-f-facultyId');
+        facultySel.innerHTML = this.faculty.map(f => `<option value="${f.id}">${GsUtil.escapeHtml(f.name)}</option>`).join('');
+        const subjectSel = document.getElementById('tt-f-subjectId');
+        subjectSel.innerHTML = this.subjects.map(s => `<option value="${s.id}">${GsUtil.escapeHtml(s.name)}</option>`).join('');
+
+        if (slot) {
+          // Guard against a slot referencing a faculty/subject that no longer
+          // exists in the currently-loaded lists (e.g. deactivated faculty).
+          // Setting .value to a missing option just no-ops in every browser,
+          // so this can never throw — but we still validate defensively.
+          facultySel.value = slot.facultyId != null ? String(slot.facultyId) : '';
+          subjectSel.value = slot.subjectId != null ? String(slot.subjectId) : '';
+          document.getElementById('tt-f-roomNumber').value = slot.roomNumber || '';
+        } else {
+          document.getElementById('tt-f-roomNumber').value = '';
+        }
+
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('tt-cell-modal')).show();
+      } catch (err) {
+        // Never let a rendering error leave a half-shown modal/backdrop
+        // behind. Clean up and surface the problem instead of freezing.
+        GsUX?.closeAllModals();
+        GsUtil.toast('Could not open this slot: ' + GsUtil.apiErrorMessage(err), 'danger');
+        console.error('TimetableMod.openCell failed', err);
       }
-
-      bootstrap.Modal.getOrCreateInstance(document.getElementById('tt-cell-modal')).show();
     },
 
     buildPayload() {
