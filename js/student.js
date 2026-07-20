@@ -19,6 +19,7 @@
   document.querySelectorAll('.gs-nav-link').forEach(link => {
     link.addEventListener('click', () => {
       if (link.dataset.href) { window.location.href = link.dataset.href; return; }
+      GsUX?.closeAllModals();
       const target = link.dataset.section;
       document.querySelectorAll('.gs-nav-link').forEach(l => l.classList.remove('active'));
       link.classList.add('active');
