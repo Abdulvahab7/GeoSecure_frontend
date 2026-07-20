@@ -60,13 +60,22 @@
 
 
   // Poll unread notification count for the sidebar badge.
+  // Isolated from the rest of the dashboard on purpose: this is a background
+  // poll, not a user-initiated action, so a failure here (network error,
+  // 500, or an expired token) must never clear the session, redirect the
+  // page, or leave any global loading state active. It only ever touches
+  // the badge element and nothing else.
   async function pollNotifCount() {
     try {
-      const { count } = await GsApi.get('/api/notifications/unread-count');
+      const { count } = await GsApi.get('/api/notifications/unread-count', undefined, { silent: true });
       const badge = document.getElementById('notif-count-badge');
+      if (!badge) return;
       if (count > 0) { badge.textContent = count; badge.classList.remove('d-none'); }
       else badge.classList.add('d-none');
-    } catch (e) { /* ignore */ }
+    } catch (e) {
+      // Swallow the error: the sidebar badge simply won't update this cycle.
+      // Timetable, modals, and every other section remain fully interactive.
+    }
   }
   pollNotifCount();
   setInterval(pollNotifCount, 30000);
