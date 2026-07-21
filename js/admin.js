@@ -435,18 +435,14 @@
 
       const filter = document.getElementById('tt-class-filter');
       filter.innerHTML = classes.map(c => `<option value="${c.id}">${GsUtil.escapeHtml(c.name)} (${GsUtil.escapeHtml(c.section)})</option>`).join('');
-      filter.addEventListener('change', () => this.reload());
+      filter.onchange = () => this.reload();
 
-      document.getElementById('tt-cell-save-btn').addEventListener('click', () => this.saveCell());
-      document.getElementById('tt-cell-delete-btn').addEventListener('click', () => this.deleteCell());
+      document.getElementById('tt-cell-save-btn').onclick = () => this.saveCell();
+      document.getElementById('tt-cell-delete-btn').onclick = () => this.deleteCell();
 
       // Modal instance/backdrop lifecycle (dispose + backdrop/body cleanup
       // on abrupt nav-away) is handled centrally by GsUX.initModalLifecycle()
-      // in ui-ux.js. The nested-modal freeze this used to guard against
-      // (GsUtil.confirm() opening a second Bootstrap modal on top of this
-      // one from deleteCell(), below) is now impossible: confirm() no
-      // longer creates a real Bootstrap Modal instance at all — see
-      // utils.js.
+      // in ui-ux.js.
 
       if (classes.length) await this.reload();
       else document.getElementById('tt-grid-wrap').innerHTML = `<div class="gs-empty border-0"><i class="bi bi-calendar-week"></i>No classes defined yet — add a class first.</div>`;
@@ -548,7 +544,9 @@
       const id = document.getElementById('tt-f-id').value;
       const payload = this.buildPayload();
       const errBox = document.getElementById('tt-cell-error');
+      const saveBtn = document.getElementById('tt-cell-save-btn');
       errBox.classList.add('d-none');
+      saveBtn.disabled = true;
       try {
         if (id) await GsApi.put(`/api/admin/timetable/${id}`, payload);
         else await GsApi.post('/api/admin/timetable', payload);
@@ -558,6 +556,8 @@
       } catch (err) {
         errBox.textContent = GsUtil.apiErrorMessage(err);
         errBox.classList.remove('d-none');
+      } finally {
+        saveBtn.disabled = false;
       }
     },
 
@@ -566,6 +566,8 @@
       if (!id) return;
       const ok = await GsUtil.confirm({ title: 'Delete this session?', body: 'This slot will be removed from the timetable.', confirmText: 'Delete', danger: true });
       if (!ok) return;
+      const delBtn = document.getElementById('tt-cell-delete-btn');
+      delBtn.disabled = true;
       try {
         await GsApi.delete(`/api/admin/timetable/${id}`);
         bootstrap.Modal.getOrCreateInstance(document.getElementById('tt-cell-modal')).hide();
@@ -573,6 +575,8 @@
         await this.reload();
       } catch (err) {
         GsUtil.toast(GsUtil.apiErrorMessage(err), 'danger');
+      } finally {
+        delBtn.disabled = false;
       }
     },
   };
