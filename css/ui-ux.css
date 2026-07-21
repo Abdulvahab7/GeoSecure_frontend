@@ -388,7 +388,30 @@ label.form-label { font-weight: 600; font-size: 0.85rem; }
 .modal-footer { border-top: 1px solid var(--gs-border); }
 
 /* ---------- Confirmation dialog polish (Bootstrap-modal based) ---------- */
-#gs-confirm-modal .modal-content { border-radius: var(--gs-radius); }
+/* GsUtil.confirm() overlay — intentionally plain (not .modal/.modal-backdrop)
+   so it never registers as a stacked Bootstrap modal instance; see utils.js
+   for why. */
+.gs-confirm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1080; /* above Bootstrap's default .modal-backdrop (1055) and .modal (1050) */
+  background: rgba(15, 23, 42, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+.gs-confirm-box {
+  background: #fff;
+  border-radius: var(--gs-radius);
+  box-shadow: var(--gs-shadow);
+  width: 100%;
+  max-width: 420px;
+  padding: 1.25rem;
+}
+.gs-confirm-title { margin-bottom: 0.5rem; font-weight: 600; }
+.gs-confirm-body { color: var(--gs-muted, #6b7280); margin-bottom: 1rem; font-size: 0.925rem; }
+.gs-confirm-actions { display: flex; justify-content: flex-end; gap: 0.5rem; }
 
 /* ---------- Smooth page/section transitions ---------- */
 .gs-section { will-change: opacity, transform; }
