@@ -167,31 +167,24 @@ const GsUX = {
 
   /* ---------------- Modal lifecycle (single source of truth) ---------------- */
   /**
-   * Bootstrap's Modal.hide() is per-instance: each modal cleans up only its
-   * *own* backdrop and unconditionally strips `body.modal-open` / the
-   * scrollbar-padding it applied, regardless of whether another modal is
-   * still open underneath it (e.g. GsUtil.confirm shows a second modal on
-   * top of an already-open edit modal). Bootstrap has no built-in concept
-   * of "the last remaining open modal", so with two modals stacked,
-   * closing the top one can strip the body lock while the bottom modal's
-   * own backdrop is left behind — a `<div class="modal-backdrop">` that
-   * still covers the viewport and swallows every click, even though
-   * nothing looks obviously wrong. Deleting that leftover backdrop node is
-   * exactly what "restores interaction" — that orphaned backdrop is the
-   * freeze.
+   * General-purpose Bootstrap modal cleanup, registered once per page.
    *
-   * Fix: a single delegated `hidden.bs.modal` listener (registered once)
-   * that runs after *every* modal finishes hiding, anywhere in the app,
-   * and reconciles document-level state from scratch instead of each
-   * modal instance managing it independently:
-   *   - disposes that modal's Bootstrap instance so the next
-   *     getOrCreateInstance() call starts clean (no stale instance data),
-   *   - if no modal is open anymore, strips every backdrop + body lock,
-   *   - if a modal is still open underneath, makes sure exactly one
-   *     backdrop remains and the body stays locked (undoing whatever the
-   *     just-closed modal incorrectly tore down).
-   * This is driven entirely by Bootstrap's own events, so it is correct
-   * the instant each transition really ends — no setTimeout guessing.
+   * This used to also be responsible for papering over a stacked-modal
+   * scenario (GsUtil.confirm() opening a second real Bootstrap modal on
+   * top of an already-open one, e.g. from the timetable cell editor's
+   * delete button) that left an orphaned `.modal-backdrop` covering the
+   * viewport and blocking all clicks. That has since been fixed at the
+   * source — GsUtil.confirm() (see utils.js) no longer creates a real
+   * Bootstrap Modal instance at all, so two Modal instances are never
+   * open at the same time and that failure mode can't occur.
+   *
+   * What's left here is a straightforward safety net for the ordinary,
+   * single-modal case: if a modal's section is navigated away from
+   * (display:none'd) while the modal is still open, its backdrop can be
+   * abandoned in <body> without ever firing its own cleanup. This
+   * delegated `hidden.bs.modal` listener disposes each modal's instance
+   * as it closes and strips any backdrop/body-lock state once nothing is
+   * left open — driven entirely by Bootstrap's own events, no timers.
    */
   _reconcileModalState() {
     const stillOpen = document.querySelectorAll('.modal.show').length;
