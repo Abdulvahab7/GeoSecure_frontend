@@ -440,12 +440,13 @@
       document.getElementById('tt-cell-save-btn').addEventListener('click', () => this.saveCell());
       document.getElementById('tt-cell-delete-btn').addEventListener('click', () => this.deleteCell());
 
-      // Modal instance/backdrop lifecycle (dispose + backdrop/body cleanup,
-      // including the nested GsUtil.confirm() case triggered from
-      // deleteCell()) is handled centrally by GsUX.initModalLifecycle()'s
-      // delegated hidden.bs.modal listener in ui-ux.js — see that file for
-      // why a purely local, per-modal handler like this used to leave a
-      // stale backdrop behind when a second modal was stacked on top.
+      // Modal instance/backdrop lifecycle (dispose + backdrop/body cleanup
+      // on abrupt nav-away) is handled centrally by GsUX.initModalLifecycle()
+      // in ui-ux.js. The nested-modal freeze this used to guard against
+      // (GsUtil.confirm() opening a second Bootstrap modal on top of this
+      // one from deleteCell(), below) is now impossible: confirm() no
+      // longer creates a real Bootstrap Modal instance at all — see
+      // utils.js.
 
       if (classes.length) await this.reload();
       else document.getElementById('tt-grid-wrap').innerHTML = `<div class="gs-empty border-0"><i class="bi bi-calendar-week"></i>No classes defined yet — add a class first.</div>`;
