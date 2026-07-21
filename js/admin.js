@@ -440,24 +440,12 @@
       document.getElementById('tt-cell-save-btn').addEventListener('click', () => this.saveCell());
       document.getElementById('tt-cell-delete-btn').addEventListener('click', () => this.deleteCell());
 
-      // Deterministic lifecycle cleanup — single source of truth for tearing
-      // down the modal no matter how it was closed (Cancel, X, Esc, save/delete
-      // success, or a nav-triggered closeAllModals()). Bootstrap's own hide()
-      // *should* clean up its backdrop on transition-end, but relying on that
-      // alone is what let a backdrop get orphaned in <body>. Hooking
-      // hidden.bs.modal guarantees this runs every time, and dispose() ensures
-      // the next open() starts from a clean instance (getOrCreateInstance will
-      // recreate it).
-      const ttModalEl = document.getElementById('tt-cell-modal');
-      ttModalEl.addEventListener('hidden.bs.modal', () => {
-        bootstrap.Modal.getInstance(ttModalEl)?.dispose();
-        if (!document.querySelector('.modal.show')) {
-          document.querySelectorAll('.modal-backdrop').forEach(b => b.remove());
-          document.body.classList.remove('modal-open');
-          document.body.style.removeProperty('overflow');
-          document.body.style.removeProperty('padding-right');
-        }
-      });
+      // Modal instance/backdrop lifecycle (dispose + backdrop/body cleanup,
+      // including the nested GsUtil.confirm() case triggered from
+      // deleteCell()) is handled centrally by GsUX.initModalLifecycle()'s
+      // delegated hidden.bs.modal listener in ui-ux.js — see that file for
+      // why a purely local, per-modal handler like this used to leave a
+      // stale backdrop behind when a second modal was stacked on top.
 
       if (classes.length) await this.reload();
       else document.getElementById('tt-grid-wrap').innerHTML = `<div class="gs-empty border-0"><i class="bi bi-calendar-week"></i>No classes defined yet — add a class first.</div>`;
