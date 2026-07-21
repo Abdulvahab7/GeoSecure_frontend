@@ -165,40 +165,79 @@ const GsUX = {
     form.querySelectorAll('.gs-field-error').forEach((e) => e.remove());
   },
 
-  /* ---------------- Modal cleanup ---------------- */
+  /* ---------------- Modal lifecycle (single source of truth) ---------------- */
   /**
-   * Closes any open Bootstrap modals via the proper Modal API (so the
-   * backdrop and body classes are cleaned up correctly), then, as a safety
-   * net, forcibly strips any leftover backdrop/body-lock state a moment
-   * later in case a modal was hidden abruptly (e.g. its section was
-   * navigated away from) and never fired its own cleanup.
+   * Bootstrap's Modal.hide() is per-instance: each modal cleans up only its
+   * *own* backdrop and unconditionally strips `body.modal-open` / the
+   * scrollbar-padding it applied, regardless of whether another modal is
+   * still open underneath it (e.g. GsUtil.confirm shows a second modal on
+   * top of an already-open edit modal). Bootstrap has no built-in concept
+   * of "the last remaining open modal", so with two modals stacked,
+   * closing the top one can strip the body lock while the bottom modal's
+   * own backdrop is left behind — a `<div class="modal-backdrop">` that
+   * still covers the viewport and swallows every click, even though
+   * nothing looks obviously wrong. Deleting that leftover backdrop node is
+   * exactly what "restores interaction" — that orphaned backdrop is the
+   * freeze.
    *
-   * Bootstrap modals render their backdrop as a direct child of <body>,
-   * separate from the page section that opened them. If a section is
-   * hidden (display:none) via nav routing while its modal is still open,
-   * the modal's own content disappears with the section, but the
-   * full-viewport backdrop + `body.modal-open` (overflow:hidden) can be
-   * left behind — silently blocking all clicks/scroll on every other page
-   * until a manual refresh. This guards against that.
+   * Fix: a single delegated `hidden.bs.modal` listener (registered once)
+   * that runs after *every* modal finishes hiding, anywhere in the app,
+   * and reconciles document-level state from scratch instead of each
+   * modal instance managing it independently:
+   *   - disposes that modal's Bootstrap instance so the next
+   *     getOrCreateInstance() call starts clean (no stale instance data),
+   *   - if no modal is open anymore, strips every backdrop + body lock,
+   *   - if a modal is still open underneath, makes sure exactly one
+   *     backdrop remains and the body stays locked (undoing whatever the
+   *     just-closed modal incorrectly tore down).
+   * This is driven entirely by Bootstrap's own events, so it is correct
+   * the instant each transition really ends — no setTimeout guessing.
+   */
+  _reconcileModalState() {
+    const stillOpen = document.querySelectorAll('.modal.show').length;
+    const backdrops = document.querySelectorAll('.modal-backdrop');
+    if (stillOpen === 0) {
+      backdrops.forEach((b) => b.remove());
+      document.body.classList.remove('modal-open');
+      document.body.style.removeProperty('overflow');
+      document.body.style.removeProperty('padding-right');
+    } else {
+      backdrops.forEach((b, i) => { if (i > 0) b.remove(); });
+      if (backdrops.length === 0) {
+        const backdrop = document.createElement('div');
+        backdrop.className = 'modal-backdrop fade show';
+        document.body.appendChild(backdrop);
+      }
+      document.body.classList.add('modal-open');
+    }
+  },
+
+  /** Registers the delegated modal-lifecycle listener. Safe to call multiple times (no-op after the first). */
+  initModalLifecycle() {
+    if (document.body.dataset.gsModalLifecycleInit) return;
+    document.body.dataset.gsModalLifecycleInit = '1';
+    document.addEventListener('hidden.bs.modal', (e) => {
+      bootstrap?.Modal?.getInstance(e.target)?.dispose();
+      GsUX._reconcileModalState();
+    }, true);
+  },
+
+  /**
+   * Closes any open Bootstrap modals via the proper Modal API. Backdrop/
+   * body cleanup is handled by the delegated hidden.bs.modal listener
+   * above as each hide() transition completes — no polling or fixed
+   * delay required here.
    */
   closeAllModals() {
     document.querySelectorAll('.modal.show').forEach((m) => {
       bootstrap?.Modal?.getInstance(m)?.hide();
     });
-    setTimeout(() => {
-      const anyOpen = document.querySelector('.modal.show');
-      if (!anyOpen) {
-        document.querySelectorAll('.modal-backdrop').forEach((b) => b.remove());
-        document.body.classList.remove('modal-open');
-        document.body.style.removeProperty('overflow');
-        document.body.style.removeProperty('padding-right');
-      }
-    }, 350); // just past Bootstrap's default .3s fade transition
   },
 
   /* ---------------- Keyboard / accessibility ---------------- */
   /** Closes the mobile sidebar on Escape, and adds a skip-to-content link if missing. */
   initA11y() {
+    this.initModalLifecycle();
     if (!document.querySelector('.gs-skip-link') && document.getElementById('gs-content-main')) {
       const link = document.createElement('a');
       link.href = '#gs-content-main';
