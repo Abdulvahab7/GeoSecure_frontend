@@ -91,47 +91,70 @@ const GsUtil = {
     return (err && err.message) || 'Something went wrong.';
   },
 
-  /** Promise-based confirm using a Bootstrap modal instead of window.confirm. */
+  /**
+   * Promise-based confirm dialog. Deliberately NOT implemented as a
+   * Bootstrap Modal: confirm() is routinely invoked from delete buttons
+   * that live *inside* an already-open Bootstrap modal (e.g. the
+   * timetable cell editor). Bootstrap 5 does not support stacking two
+   * real Modal instances — each instance's hide() independently strips
+   * `body.modal-open` and removes only its own backdrop, with no
+   * awareness of the other modal still being open, which is exactly what
+   * was leaving an orphaned `.modal-backdrop` (covering the whole
+   * viewport, blocking every click) behind whenever a confirm dialog was
+   * closed on top of another open modal. Using a plain, self-contained
+   * overlay here — with its own backdrop element and no interaction with
+   * Bootstrap's modal bookkeeping at all — means there is never more than
+   * one real Bootstrap Modal instance in play, so that failure mode can't
+   * happen, regardless of what it's opened on top of.
+   */
   confirm({ title = 'Are you sure?', body = '', confirmText = 'Confirm', danger = false } = {}) {
     return new Promise((resolve) => {
-      let modalEl = document.getElementById('gs-confirm-modal');
-      if (!modalEl) {
-        modalEl = document.createElement('div');
-        modalEl.id = 'gs-confirm-modal';
-        modalEl.className = 'modal fade';
-        modalEl.tabIndex = -1;
-        modalEl.innerHTML = `
-          <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-              <div class="modal-header">
-                <h5 class="modal-title" id="gs-confirm-title"></h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-              </div>
-              <div class="modal-body" id="gs-confirm-body"></div>
-              <div class="modal-footer">
-                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn" id="gs-confirm-ok-btn"></button>
-              </div>
-            </div>
-          </div>`;
-        document.body.appendChild(modalEl);
-      }
-      modalEl.querySelector('#gs-confirm-title').textContent = title;
-      modalEl.querySelector('#gs-confirm-body').textContent = body;
-      const okBtn = modalEl.querySelector('#gs-confirm-ok-btn');
+      // Always build fresh and fully remove on close, rather than reusing
+      // a single hidden instance — there's no Bootstrap Modal object here
+      // whose lifecycle needs preserving, so "created once" would only add
+      // stale-DOM risk for no benefit.
+      document.getElementById('gs-confirm-overlay')?.remove();
+
+      const overlay = document.createElement('div');
+      overlay.id = 'gs-confirm-overlay';
+      overlay.className = 'gs-confirm-overlay';
+      overlay.innerHTML = `
+        <div class="gs-confirm-box" role="alertdialog" aria-modal="true" aria-labelledby="gs-confirm-title" tabindex="-1">
+          <h5 id="gs-confirm-title" class="gs-confirm-title"></h5>
+          <div class="gs-confirm-body"></div>
+          <div class="gs-confirm-actions">
+            <button type="button" class="btn btn-light" data-action="cancel">Cancel</button>
+            <button type="button" class="btn" data-action="ok"></button>
+          </div>
+        </div>`;
+      document.body.appendChild(overlay);
+
+      overlay.querySelector('#gs-confirm-title').textContent = title;
+      overlay.querySelector('.gs-confirm-body').textContent = body;
+      const okBtn = overlay.querySelector('[data-action="ok"]');
       okBtn.textContent = confirmText;
       okBtn.className = `btn ${danger ? 'btn-danger' : 'btn-gs-primary'}`;
+      const cancelBtn = overlay.querySelector('[data-action="cancel"]');
 
-      const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
-      const onOk = () => { cleanup(); modal.hide(); resolve(true); };
-      const onHide = () => { cleanup(); resolve(false); };
-      function cleanup() {
-        okBtn.removeEventListener('click', onOk);
-        modalEl.removeEventListener('hidden.bs.modal', onHide);
-      }
-      okBtn.addEventListener('click', onOk);
-      modalEl.addEventListener('hidden.bs.modal', onHide, { once: true });
-      modal.show();
+      const close = (result) => {
+        document.removeEventListener('keydown', onKeydown);
+        overlay.remove();
+        resolve(result);
+      };
+      const onKeydown = (e) => {
+        if (e.key === 'Escape') close(false);
+        // Simple focus trap between the two buttons.
+        if (e.key === 'Tab') {
+          e.preventDefault();
+          (document.activeElement === okBtn ? cancelBtn : okBtn).focus();
+        }
+      };
+
+      okBtn.addEventListener('click', () => close(true));
+      cancelBtn.addEventListener('click', () => close(false));
+      overlay.addEventListener('mousedown', (e) => { if (e.target === overlay) close(false); });
+      document.addEventListener('keydown', onKeydown);
+      okBtn.focus();
     });
   },
 
